@@ -1,0 +1,12 @@
+[package]
+name = "compcollab-game"
+version = "0.1.0"
+authors = ["Albino Cordeiro <albino@sportlogiq.com>"]
+edition = "2018"
+description = "compcollab-game mandatory description"
+repository = "https://github.com/{[username]}/compcollab-game"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
