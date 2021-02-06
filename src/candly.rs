@@ -9,7 +9,6 @@ extern crate clap;
 extern crate phf;
 
 use std::env;
-use std::error::Error;
 use reqwest::blocking::Client;
 use clap::{App, Arg, ArgMatches};
 use chrono::NaiveDateTime;
@@ -25,11 +24,6 @@ static UNITS_MAP: phf::Map<&'static str, u64> = phf_map! {
     "WEEK" => 604800,
     "MONTH" => 18144000,
 };
-
-// static MY_SET: phf::Set<&'static str> = phf_set! {
-//     "hello world",
-//     "hola mundo",
-// };
 
 #[derive(Debug)]
 struct CandlyArgs {
@@ -76,6 +70,7 @@ struct TickData {
     quoteVolume: f64,
     weightedAverage: f64,
 }
+
 fn timeframe_string_to_seconds(tf: String) -> u64 {
     let split: Vec<&str> = tf.split("-").collect();
     let mult: u64 = u64::from_str_radix(split[0], 32).unwrap();
@@ -101,9 +96,9 @@ fn main() {
                         .takes_value(true))
                     .arg(Arg::with_name("timeframe")
                         .short("t")
-                        .help("Candle time frame. Must be more than 5-MIN")
+                        .help("Candle time frame. Must be more than valid period: 300, 900, 1800, 7200, 14400, 86400")
                         .long("timeframe")
-                        .value_name("MULTIPLIER-UNIT")
+                        .value_name("seconds")
                         .takes_value(true))
                     .arg(Arg::with_name("start")
                         .short("s")
@@ -128,16 +123,16 @@ fn main() {
                     .to_string();
     let timeframe_string = matches
                             .value_of("timeframe")
-                            .unwrap_or("1-DAY")
+                            .unwrap_or("300")
                             .to_string();
-    options.timeframe = timeframe_string_to_seconds(timeframe_string);
+    options.timeframe = timeframe_string.parse().expect("Time frame provided can't be parsed to u64");
     options.start_utc = datetime_string_to_timestamp(matches
                                                     .value_of("start")
-                                                    .unwrap_or("2020-8-1 12:00:00")
+                                                    .unwrap_or("2020-1-1 12:00:00")
                                                     .to_string());
     options.end_utc = datetime_string_to_timestamp(matches
                                                     .value_of("end")
-                                                    .unwrap_or("2020-9-2 12:00:00")
+                                                    .unwrap_or("2021-2-1 12:00:00")
                                                     .to_string());
     
     eprintln!("Parsed arguments: {:?}", &options);
@@ -149,7 +144,12 @@ fn main() {
                              options.pair, options.start_utc, options.end_utc, options.timeframe));
     let body = match client.get(url).send() {
         Ok(resp) => match resp.text() {
-            Ok(text) => text,
+            Ok(text) => {
+                if (text.contains("error")){
+                    panic!(text)
+                }
+                text
+            },
             Err(_ee) => panic!("Got nothing from poloniex")
         },
         Err(e) => panic!("Failed web requeest: {}", e)
@@ -168,12 +168,12 @@ fn main() {
 
     for jobj in &json_array {
         match csvwriter.serialize(&jobj) {
-            Ok(nada) => nada,
-            Err(e) => panic!("Could not serialize record: {}", e)
+            Err(e) => panic!("Could not serialize record: {}", e),
+            _ => {}
         };
     }
     match csvwriter.flush(){
-        Ok(r) => println!("Csv writing done"),
+        Ok(_r) => println!("Csv writing done"),
         Err(e) => panic!("Error writing to csv file: {}", e)
     };
     
