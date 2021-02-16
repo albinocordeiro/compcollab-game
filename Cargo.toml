@@ -21,15 +21,3 @@ csv = "^1"
 chrono = { version = "^0.4", features = ["serde"] }
 clap = "^2.33"
 phf = { version = "^0.7.24", features = ["macros"] }
-
-
-[dev-dependencies]
-
-
-[[bin]]
-name = "candly"
-path = "src/candly.rs" 
-
-[[bin]]
-name = "csv2db"
-path = "src/csv2db.rs"
