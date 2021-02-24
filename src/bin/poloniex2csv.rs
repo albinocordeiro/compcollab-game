@@ -1,45 +1,16 @@
 extern crate compcollab_game;
 extern crate clap;
+extern crate csv;
+extern crate color_eyre;
 
 use std::env;
 use clap::{App, Arg, ArgMatches};
-use compcollab_game::data::sources::poloniex::{CandleRequestArgs, CandleData, datetime_string_to_timestamp, download_candles};
-use csv::Writer as CsvWriter;
+use compcollab_game::data::sources::poloniex::{CandleRequestArgs, datetime_string_to_timestamp, download_candles};
+use color_eyre::Result;
 
-
-fn get_output_file_name(args: &CandleRequestArgs) -> String {
-    let mut res = String::from("");
-    res.push_str(&args.pair);
-    res.push_str("_");
-    res.push_str(&args.timeframe.to_string());
-    res.push_str("_");
-    res.push_str(&args.start_utc.to_string());
-    res.push_str("_");
-    res.push_str(&args.end_utc.to_string());
-    res.push_str(".csv");
-    res
-}
-
-fn write_candles_to_file(csv_file_name: &str, candles: &[CandleData]){
-    let mut csvwriter = match CsvWriter::from_path(csv_file_name) {
-        Ok(wr) => wr,
-        Err(e) => panic!("Could not create CSV writer: {}", e)
-    };
-
-    for candle in candles {
-        match csvwriter.serialize(&candle) {
-            Err(e) => panic!("Could not serialize record: {}", e),
-            _ => {}
-        };
-    }
-    match csvwriter.flush(){
-        Ok(_r) => println!("Csv writing done"),
-        Err(e) => panic!("Error writing to csv file: {}", e)
-    };
-}
-fn main() {    
+fn main() -> Result<()> {    
     let app = App::new("Candly: candle data downloader")
-                    .version("1.0")
+                    .version("0.1.0")
                     .author("Albino Cordeiro <albino@sportlogiq.com>")
                     .about("Download and save candle data from Poloniex")
                     .template("{bin} ({version}) - {usage}")
@@ -89,12 +60,9 @@ fn main() {
                                                     .value_of("end")
                                                     .unwrap_or("2021-2-1 12:00:00")
                                                     .to_string());
-    
-    eprintln!("Parsed arguments: {:?}", &options);
-    let csv_file_name = get_output_file_name(&options);
-    eprintln!("Output file name: {}", &csv_file_name);
-    
-    let candles = download_candles(&options);
-    
-    write_candles_to_file(&csv_file_name, &candles);
+
+    println!("Using the following options: {:?}", options);
+    // Download candles to a csv file and also attempt to populate local database 
+    download_candles(&options)?;
+    Ok(())
 }
