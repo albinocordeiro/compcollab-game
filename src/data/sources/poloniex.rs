@@ -3,20 +3,20 @@ use reqwest::blocking::Client;
 use chrono::NaiveDateTime;
 use serde_derive::{Serialize, Deserialize};
 use crate::data::model::NewCandle;
-use crate::data::dbapi::insert_candle;
+use crate::data::dbapi::insert_candles;
 
 #[derive(Debug, Copy, Clone)]
-pub struct CandleRequestArgs {
-    pub pair: String,
+pub struct CandleRequestArgs<'a> {
+    pub pair: &'a str,
     pub timeframe: u64,
     pub start_utc: i64,
     pub end_utc: i64
 }
 
-impl Default for CandleRequestArgs {
-    fn default() -> CandleRequestArgs {
+impl<'a> Default for CandleRequestArgs<'a> {
+    fn default() -> CandleRequestArgs<'a> {
         CandleRequestArgs {
-            pair: String::from("BTC_USDT"),
+            pair: "USDT_BTC",
             timeframe: 300,
             start_utc: NaiveDateTime::parse_from_str("2020-6-1 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap().timestamp(),
             end_utc: NaiveDateTime::parse_from_str("2020-7-1 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap().timestamp(),
@@ -24,13 +24,10 @@ impl Default for CandleRequestArgs {
     }
 }
 
-impl Copy for CandleRequestArgs {
-}
-
-impl CandleRequestArgs {
+impl<'a> CandleRequestArgs<'a> {
     fn get_output_file_name(&self) -> Result<String> {
         let mut res = String::from("");
-        res.push_str(&self.pair);
+        res.push_str(self.pair);
         res.push_str("_");
         res.push_str(&self.timeframe.to_string());
         res.push_str("_");
@@ -43,7 +40,7 @@ impl CandleRequestArgs {
     }
 
     fn get_table_name(self) -> Result<String> {
-        Err(eyre!("Not implemented"))
+        Ok(self.pair.to_lowercase())
     }
 }
 
@@ -63,7 +60,7 @@ struct PoloniexCandle {
 impl PoloniexCandle {
     fn get_generic_candle(self) -> NewCandle {   
         NewCandle {
-            date: self.date,
+            date: NaiveDateTime::from_timestamp(self.date as i64, 0),
             open: self.open,
             high: self.high,
             low: self.low,
@@ -105,12 +102,12 @@ pub fn download_candles(candle_request_args: &CandleRequestArgs) -> Result<()> {
     }
     let mut new_candles = Vec::new();
     for pol_candle in &poloniex_candles {
-        let new_candle = pol_candle.get_generic_candle();
+        let new_candle: NewCandle = pol_candle.get_generic_candle();
         new_candles.push(new_candle);
     }
     
     let csv_file_name = candle_request_args.get_output_file_name()?;
-    let table_name = get_table_name(candle_request_args)?;
+    let table_name = candle_request_args.get_table_name()?;
 
     save_candles_to_csv(&csv_file_name, &new_candles)?;
     push_candles_to_database(&table_name, &new_candles)?;
@@ -118,7 +115,7 @@ pub fn download_candles(candle_request_args: &CandleRequestArgs) -> Result<()> {
     Ok(())
 }
 
-fn save_candles_to_csv(csv_file_name: &str, candles: &[NewCandle]) ->Result<()> {
+fn save_candles_to_csv(csv_file_name: &str, candles: &[NewCandle]) -> Result<()> {
     use csv::Writer;
     let mut csvwriter = Writer::from_path(csv_file_name)?;
 
@@ -132,8 +129,6 @@ fn save_candles_to_csv(csv_file_name: &str, candles: &[NewCandle]) ->Result<()> 
 }
 
 fn push_candles_to_database(table_name: &str, candles: &[NewCandle]) -> Result<()> {
-    for candle in candles {
-        insert_candle(table_name, candle)?;
-    }
+    insert_candles(table_name, candles)?;
     Ok(())
 }

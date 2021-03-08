@@ -45,8 +45,7 @@ fn main() -> Result<()> {
     let mut options: CandleRequestArgs = CandleRequestArgs::default();
     options.pair = matches
                     .value_of("pair")
-                    .unwrap_or(&options.pair)
-                    .to_string();
+                    .unwrap_or(&options.pair);
     let timeframe_string = matches
                             .value_of("timeframe")
                             .unwrap_or("300")
