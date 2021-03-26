@@ -2,7 +2,7 @@ use color_eyre::{Report, Result, eyre::eyre};
 use reqwest::blocking::Client;
 use chrono::NaiveDateTime;
 use serde_derive::{Serialize, Deserialize};
-use crate::data::model::NewCandle;
+use crate::data::model::Candle;
 use crate::data::dbapi::insert_candles;
 
 #[derive(Debug, Copy, Clone)]
@@ -58,9 +58,10 @@ struct PoloniexCandle {
 }
 
 impl PoloniexCandle {
-    fn get_generic_candle(self) -> NewCandle {   
-        NewCandle {
-            date: NaiveDateTime::from_timestamp(self.date as i64, 0),
+    fn get_generic_candle(self) -> Candle {   
+        Candle {
+            id: 0,
+            timestamp: NaiveDateTime::from_timestamp(self.date as i64, 0),
             open: self.open,
             high: self.high,
             low: self.low,
@@ -102,7 +103,7 @@ pub fn download_candles(candle_request_args: &CandleRequestArgs) -> Result<()> {
     }
     let mut new_candles = Vec::new();
     for pol_candle in &poloniex_candles {
-        let new_candle: NewCandle = pol_candle.get_generic_candle();
+        let new_candle: Candle = pol_candle.get_generic_candle();
         new_candles.push(new_candle);
     }
     
@@ -115,7 +116,7 @@ pub fn download_candles(candle_request_args: &CandleRequestArgs) -> Result<()> {
     Ok(())
 }
 
-fn save_candles_to_csv(csv_file_name: &str, candles: &[NewCandle]) -> Result<()> {
+fn save_candles_to_csv(csv_file_name: &str, candles: &[Candle]) -> Result<()> {
     use csv::Writer;
     let mut csvwriter = Writer::from_path(csv_file_name)?;
 
@@ -128,7 +129,7 @@ fn save_candles_to_csv(csv_file_name: &str, candles: &[NewCandle]) -> Result<()>
     Ok(())
 }
 
-fn push_candles_to_database(table_name: &str, candles: &[NewCandle]) -> Result<()> {
+fn push_candles_to_database(table_name: &str, candles: &[Candle]) -> Result<()> {
     insert_candles(table_name, candles)?;
     Ok(())
 }
