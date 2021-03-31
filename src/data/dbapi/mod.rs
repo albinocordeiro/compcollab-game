@@ -14,7 +14,7 @@ impl SupportedTable {
     fn from_table_name(table_name: &str) -> Result<SupportedTable> { 
         match table_name {
             "usdt_btc" => Ok(SupportedTable::UsdtBtc(usdt_btc::table)),
-            _ => Err(eyre!("Unsupported table {}", table_name))
+            _ => Err(eyre!("A table for the currency pair {} was not found in the database", table_name))
         }
     }
 }

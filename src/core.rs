@@ -1,4 +1,7 @@
 use color_eyre::Result;
+use std::sync::mpsc::Receiver;
+use crate::data::model::Candle;
+
 pub trait Strategy {
-    fn register_new_candle(&mut self) -> Result<()>;
+    fn get_input_pipe(self) -> Result<Receiver<Candle>>;
 }

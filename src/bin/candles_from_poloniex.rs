@@ -11,7 +11,7 @@ use color_eyre::Result;
 fn main() -> Result<()> {    
     let app = App::new("Candly: candle data downloader")
                     .version("0.1.0")
-                    .author("Albino Cordeiro <albino@sportlogiq.com>")
+                    .author("Albino Cordeiro <albino@intuitionlogic.com>")
                     .about("Download and save candle data from Poloniex")
                     .template("{bin} ({version}) - {usage}")
                     .arg(Arg::with_name("pair")

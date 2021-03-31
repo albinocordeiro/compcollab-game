@@ -14,4 +14,5 @@ pub mod core;
 pub mod back_test;
 pub mod data;
 pub mod schema;
+pub mod strategies;
 
