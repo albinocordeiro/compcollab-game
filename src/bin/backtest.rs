@@ -5,7 +5,6 @@ extern crate compcollab_game;
 use clap::{App, Arg, ArgMatches};
 use color_eyre::Result;
 use compcollab_game::back_test::BackTestRunner;
-use compcollab_game::strategies::TrendFollowing;
 use std::env;
 
 fn main() -> Result<()> {

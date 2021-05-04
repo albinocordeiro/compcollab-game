@@ -1,11 +1,11 @@
+use crate::data::dbapi::get_all_candles;
 use crate::data::model::Candle;
 use color_eyre::Result;
 use std::sync::mpsc::Sender;
-use crate::data::dbapi::get_all_candles;
 
 pub struct BackTestRunner {
     strategies: Vec<Sender<Candle>>,
-    currency_pair: String,  
+    currency_pair: String,
 }
 
 impl BackTestRunner {

@@ -1,4 +1,3 @@
-use chrono;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Queryable)]
