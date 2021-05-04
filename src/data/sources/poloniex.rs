@@ -1,16 +1,16 @@
-use color_eyre::{Report, Result, eyre::eyre};
-use reqwest::blocking::Client;
-use chrono::NaiveDateTime;
-use serde_derive::{Serialize, Deserialize};
-use crate::data::model::Candle;
 use crate::data::dbapi::insert_candles;
+use crate::data::model::Candle;
+use chrono::NaiveDateTime;
+use color_eyre::{eyre::eyre, Report, Result};
+use reqwest::blocking::Client;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone)]
 pub struct CandleRequestArgs<'a> {
     pub pair: &'a str,
     pub timeframe: u64,
     pub start_utc: i64,
-    pub end_utc: i64
+    pub end_utc: i64,
 }
 
 impl<'a> Default for CandleRequestArgs<'a> {
@@ -18,8 +18,12 @@ impl<'a> Default for CandleRequestArgs<'a> {
         CandleRequestArgs {
             pair: "USDT_BTC",
             timeframe: 300,
-            start_utc: NaiveDateTime::parse_from_str("2020-6-1 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap().timestamp(),
-            end_utc: NaiveDateTime::parse_from_str("2020-7-1 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap().timestamp(),
+            start_utc: NaiveDateTime::parse_from_str("2020-6-1 12:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap()
+                .timestamp(),
+            end_utc: NaiveDateTime::parse_from_str("2020-7-1 12:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap()
+                .timestamp(),
         }
     }
 }
@@ -35,7 +39,7 @@ impl<'a> CandleRequestArgs<'a> {
         res.push_str("_");
         res.push_str(&self.end_utc.to_string());
         res.push_str(".csv");
-        
+
         Ok(res)
     }
 
@@ -58,7 +62,7 @@ struct PoloniexCandle {
 }
 
 impl PoloniexCandle {
-    fn get_generic_candle(self) -> Candle {   
+    fn get_generic_candle(self) -> Candle {
         Candle {
             id: 0,
             timestamp: NaiveDateTime::from_timestamp(self.date as i64, 0),
@@ -72,12 +76,14 @@ impl PoloniexCandle {
 }
 
 pub fn datetime_string_to_timestamp(time_string: String) -> i64 {
-    NaiveDateTime::parse_from_str(&time_string, "%Y-%m-%d %H:%M:%S").unwrap().timestamp()
+    NaiveDateTime::parse_from_str(&time_string, "%Y-%m-%d %H:%M:%S")
+        .unwrap()
+        .timestamp()
 }
 
 pub fn download_candles(candle_request_args: &CandleRequestArgs) -> Result<()> {
     let client = Client::new();
-        
+
     let url: &str= &(format!("https://poloniex.com/public?command=returnChartData&currencyPair={0}&start={1}&end={2}&resolution=auto&period={3}",
                             candle_request_args.pair, candle_request_args.start_utc, candle_request_args.end_utc, candle_request_args.timeframe));
 
@@ -89,10 +95,10 @@ pub fn download_candles(candle_request_args: &CandleRequestArgs) -> Result<()> {
                 } else {
                     text
                 }
-            },
-            Err(ee) => return Err(Report::from(ee))
+            }
+            Err(ee) => return Err(Report::from(ee)),
         },
-        Err(e) => return Err(Report::from(e))
+        Err(e) => return Err(Report::from(e)),
     };
 
     let poloniex_candles: Vec<PoloniexCandle> = serde_json::from_str(&body_text)?;
@@ -106,13 +112,13 @@ pub fn download_candles(candle_request_args: &CandleRequestArgs) -> Result<()> {
         let new_candle: Candle = pol_candle.get_generic_candle();
         new_candles.push(new_candle);
     }
-    
+
     let csv_file_name = candle_request_args.get_output_file_name()?;
     let table_name = candle_request_args.get_table_name()?;
 
     save_candles_to_csv(&csv_file_name, &new_candles)?;
     push_candles_to_database(&table_name, &new_candles)?;
-    
+
     Ok(())
 }
 
@@ -123,7 +129,7 @@ fn save_candles_to_csv(csv_file_name: &str, candles: &[Candle]) -> Result<()> {
     for candle in candles {
         csvwriter.serialize(&candle)?;
     }
-    
+
     csvwriter.flush()?;
 
     Ok(())

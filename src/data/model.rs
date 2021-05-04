@@ -1,5 +1,5 @@
-use serde_derive::{Serialize, Deserialize};
 use chrono;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Queryable)]
 pub struct Candle {
